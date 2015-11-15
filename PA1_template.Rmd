@@ -1,25 +1,180 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
+title: 'Reproducible Research: Peer Assessment 1'
+output:
   html_document:
-    keep_md: true
+    keep_md: yes
+  pdf_document: default
 ---
+## Reproducible Research Peer Assessment - 1
 
 
 ## Loading and preprocessing the data
 
+```{r}
+## Unzipping the activity Data file and then reading the .csv file into a Data Frame
 
+
+zipFileName <- "./repdata_data_activity.zip"
+unzip(zipFileName)
+activityDF <- read.csv("./activity.csv")
+
+# converting the date variable into date format 
+
+activityDF$date <-as.Date(activityDF$date)
+
+# summary(activityDF)
+# str(activityDF)
+
+# Check the number of rows in the activity data file
+
+nrow(activityDF)
+head(activityDF)
+
+```
 
 ## What is mean total number of steps taken per day?
 
+``` {r}
 
+# For this step we need to ignore NA cases
+
+activityCompCases <- activityDF[complete.cases(activityDF),]
+
+print ("Original Rows:")
+print (nrow(activityDF))
+
+print ("After removing NAs:")
+print(nrow(activityCompCases))
+
+dateWiseStepsSum <- aggregate(activityCompCases$steps, list(activityCompCases$date), FUN = sum)
+colnames(dateWiseStepsSum) <- c("Date", "TotSteps")
+
+print("Date Wise Total Steps:")
+print(dateWiseStepsSum)
+
+## Plot of Total Number of Steps Taken Every Day
+
+library(ggplot2)
+stepsPlot <- ggplot(activityCompCases, aes(x = as.factor(date), y= steps)) 
+
+stepsPlot + geom_bar (stat = "identity") + theme(axis.text.x = element_text(angle=-90)) + xlab ("Date") + ylab ("Total Steps")
+
+
+## The histogram of total steps taken each day 
+
+xMax <- max(dateWiseStepsSum$TotSteps) + 7000
+
+
+hist(dateWiseStepsSum$TotSteps, breaks = 15, xlim = c(0, xMax), xlab = "Days::Total Steps", main = "Histogram of Days-Total Steps", col = "light blue")
+
+## The mean and median of the total number of steps taken every day
+
+dateWiseStepsMean <- aggregate(activityCompCases$steps, list(activityCompCases$date), FUN=mean)
+print("Mean of Steps every day:")
+print(dateWiseStepsMean)
+
+dateWiseStepsMedian <- aggregate(activityCompCases$steps, list(activityCompCases$date), FUN=median)
+print("Median of Steps every day:")
+print(dateWiseStepsMedian)
+
+
+print("Mean of the total number of steps taken per day:")
+print(mean(dateWiseStepsSum$TotSteps))
+
+print("Median of the total number of steps taken per day:")
+print(median(dateWiseStepsSum$TotSteps))
+
+```
 
 ## What is the average daily activity pattern?
+ 
+```{r}
+
+## Interval Wise Mean of Steps across all days
+
+IntervalWiseStepsMean <- aggregate(activityCompCases$steps, list(activityCompCases$interval), FUN=mean)
+
+colnames(IntervalWiseStepsMean) <- c("Interval", "AvgSteps")
+
+ggplot(data = IntervalWiseStepsMean, aes(x=Interval, y=AvgSteps)) + geom_line() + geom_point() + xlab ("Interval") + ylab ("Average Steps")
+
+## The 5-minute interval, that contains the maximum number of steps
+
+print("The 5-minute interval, that contains the maximum number of steps is:")
+maximumIndex <- which.max(IntervalWiseStepsMean$AvgSteps)
+print(IntervalWiseStepsMean[maximumIndex,"Interval"])
 
 
+```
 
 ## Imputing missing values
 
+```{r}
 
+## Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with NAs)
+
+print ("Number of missing values:")
+print(length(which(is.na(activityDF$steps))))
+
+## Lets use Average for a time interval to populate missing values in the original data
+
+NewActivityDF <- activityDF
+
+for (i in 1:nrow(NewActivityDF)) {
+  if (is.na(NewActivityDF[i,"steps"])) {
+    timeInt <- NewActivityDF[i, "interval"]
+    AvgStepsOfInt <- IntervalWiseStepsMean[IntervalWiseStepsMean$Interval==timeInt, "AvgSteps"]
+    NewActivityDF[[i,"steps"]] <- AvgStepsOfInt
+  }
+}
+
+NewdateWiseStepsSum <- aggregate(NewActivityDF$steps, list(NewActivityDF$date), FUN = sum)
+colnames(NewdateWiseStepsSum) <- c("Date", "TotSteps")
+
+xMax <- max(NewdateWiseStepsSum$TotSteps) + 7000
+
+
+hist(NewdateWiseStepsSum$TotSteps, breaks = 15, xlim = c(0, xMax), xlab = "Days::Total Steps", main = "New Histogram of Days-Total Steps", col = "blue")
+
+
+print("New Mean of the total number of steps taken per day:")
+print(mean(NewdateWiseStepsSum$TotSteps))
+
+print("New Median of the total number of steps taken per day:")
+print(median(NewdateWiseStepsSum$TotSteps))
+
+## Marginal increase in the mean, median values
+## Frequency counts for total steps increased in the histogram
+
+```
+
+### Marginal increase in the mean, median values
+### Frequency counts for total steps increased in the histogram
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+```{r}
+WeekType <- data.frame()
+
+for (i in 1:nrow(NewActivityDF)) {
+  if ((weekdays(NewActivityDF [i, "date"]) == "Sunday") || (weekdays(NewActivityDF [i, "date"]) == "Saturday")) {
+    WeekType[i,"WD"] <- "Weekend"
+  } else {
+    WeekType[i,"WD"] <- "WeekDay"
+  }
+}
+
+cData <- cbind(NewActivityDF, WeekType)
+
+sData <- aggregate(cData$steps, by = list(cData$WD, cData$interval), FUN = sum)
+
+colnames(sData) <- c("WD", "Interval", "TotSteps")
+
+ggplot(data=sData, aes(x=Interval, y=TotSteps)) + 
+    geom_line() + xlab("Interval") +
+    ylab("Average number of steps") + facet_grid(WD ~ .)
+
+
+```
+
+### See higher counts during weekdays compared to weekends
