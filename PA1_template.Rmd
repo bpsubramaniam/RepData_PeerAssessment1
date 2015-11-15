@@ -69,13 +69,13 @@ hist(dateWiseStepsSum$TotSteps, breaks = 15, xlim = c(0, xMax), xlab = "Days::To
 
 ## The mean and median of the total number of steps taken every day
 
-dateWiseStepsMean <- aggregate(activityCompCases$steps, list(activityCompCases$date), FUN=mean)
-print("Mean of Steps every day:")
-print(dateWiseStepsMean)
+#dateWiseStepsMean <- aggregate(activityCompCases$steps, list(activityCompCases$date), FUN=mean)
+#print("Mean of Steps every day:")
+#print(dateWiseStepsMean)
 
-dateWiseStepsMedian <- aggregate(activityCompCases$steps, list(activityCompCases$date), FUN=median)
-print("Median of Steps every day:")
-print(dateWiseStepsMedian)
+#dateWiseStepsMedian <- aggregate(activityCompCases$steps, list(activityCompCases$date), FUN=median)
+#print("Median of Steps every day:")
+#print(dateWiseStepsMedian)
 
 
 print("Mean of the total number of steps taken per day:")
